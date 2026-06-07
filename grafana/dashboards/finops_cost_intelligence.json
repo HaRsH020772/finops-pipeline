@@ -1,0 +1,466 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_ATHENA",
+      "label": "Amazon Athena",
+      "description": "Athena datasource pointed at finops_pipeline_cur",
+      "type": "datasource",
+      "pluginId": "grafana-athena-datasource",
+      "pluginName": "Amazon Athena"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "9.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-athena-datasource",
+      "name": "Amazon Athena",
+      "version": "2.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar chart",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    }
+  ],
+  "title": "FinOps Cost Intelligence",
+  "uid": "finops-cost-intel-v1",
+  "description": "AWS CUR cost trends, team spend, service anomalies \u2014 powered by Athena",
+  "version": 1,
+  "schemaVersion": 38,
+  "refresh": "1h",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "tags": [
+    "finops",
+    "aws",
+    "cost"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Current week \u2014 total spend",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "AwsDataCatalog",
+            "database": "finops_pipeline_cur",
+            "region": "ap-south-1",
+            "resultReuseEnabled": false
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "${DS_ATHENA}"
+          },
+          "format": 1,
+          "rawSQL": "SELECT ROUND(SUM(line_item_unblended_cost), 2) AS \"This Week ($)\" FROM finops_pipeline_cur.cur_report WHERE line_item_line_item_type = 'Usage' AND DATE_TRUNC('week', from_iso8601_timestamp(line_item_usage_start_date)) = (SELECT MAX(DATE_TRUNC('week', from_iso8601_timestamp(line_item_usage_start_date))) FROM finops_pipeline_cur.cur_report WHERE line_item_line_item_type = 'Usage')",
+          "refId": "A",
+          "hide": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1500
+              },
+              {
+                "color": "red",
+                "value": 2500
+              }
+            ]
+          },
+          "mappings": []
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Previous week \u2014 total spend",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "AwsDataCatalog",
+            "database": "finops_pipeline_cur",
+            "region": "ap-south-1",
+            "resultReuseEnabled": false
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "${DS_ATHENA}"
+          },
+          "format": 1,
+          "rawSQL": "SELECT ROUND(SUM(line_item_unblended_cost), 2) AS \"Prev Week ($)\" FROM finops_pipeline_cur.cur_report WHERE line_item_line_item_type = 'Usage' AND DATE_TRUNC('week', from_iso8601_timestamp(line_item_usage_start_date)) = (SELECT MIN(DATE_TRUNC('week', from_iso8601_timestamp(line_item_usage_start_date))) FROM finops_pipeline_cur.cur_report WHERE line_item_line_item_type = 'Usage')",
+          "refId": "A",
+          "hide": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Weekly cost by service",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "AwsDataCatalog",
+            "database": "finops_pipeline_cur",
+            "region": "ap-south-1",
+            "resultReuseEnabled": false
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "${DS_ATHENA}"
+          },
+          "format": 1,
+          "rawSQL": "SELECT line_item_product_code AS service, CAST(DATE_TRUNC('week', from_iso8601_timestamp(line_item_usage_start_date)) AS VARCHAR) AS week, ROUND(SUM(line_item_unblended_cost), 2) AS cost FROM finops_pipeline_cur.cur_report WHERE line_item_line_item_type = 'Usage' GROUP BY 1, 2 ORDER BY 2, 3 DESC",
+          "refId": "A",
+          "hide": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "service",
+        "groupWidth": 0.7,
+        "barWidth": 0.9,
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "type": "barchart",
+      "title": "Weekly cost by team",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "AwsDataCatalog",
+            "database": "finops_pipeline_cur",
+            "region": "ap-south-1",
+            "resultReuseEnabled": false
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "${DS_ATHENA}"
+          },
+          "format": 1,
+          "rawSQL": "SELECT resource_tags_user_team AS team, CAST(DATE_TRUNC('week', from_iso8601_timestamp(line_item_usage_start_date)) AS VARCHAR) AS week, ROUND(SUM(line_item_unblended_cost), 2) AS cost FROM finops_pipeline_cur.cur_report WHERE line_item_line_item_type = 'Usage' AND resource_tags_user_team != '' GROUP BY 1, 2 ORDER BY 2, 3 DESC",
+          "refId": "A",
+          "hide": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "team",
+        "groupWidth": 0.7,
+        "barWidth": 0.9,
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Daily total spend",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 10
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "AwsDataCatalog",
+            "database": "finops_pipeline_cur",
+            "region": "ap-south-1",
+            "resultReuseEnabled": false
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "${DS_ATHENA}"
+          },
+          "format": 0,
+          "rawSQL": "SELECT from_iso8601_timestamp(line_item_usage_start_date) AS time, ROUND(SUM(line_item_unblended_cost), 2) AS \"Daily Total ($)\" FROM finops_pipeline_cur.cur_report WHERE line_item_line_item_type = 'Usage' GROUP BY line_item_usage_start_date ORDER BY 1",
+          "refId": "A",
+          "hide": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "spanNulls": false,
+            "showPoints": "auto"
+          }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Week-over-week comparison \u2014 anomalies highlighted red (>30%)",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "targets": [
+        {
+          "connectionArgs": {
+            "catalog": "AwsDataCatalog",
+            "database": "finops_pipeline_cur",
+            "region": "ap-south-1",
+            "resultReuseEnabled": false
+          },
+          "datasource": {
+            "type": "grafana-athena-datasource",
+            "uid": "${DS_ATHENA}"
+          },
+          "format": 1,
+          "rawSQL": "SELECT service, team, ROUND(SUM(CASE WHEN week_rank = 2 THEN cost ELSE 0 END), 2) AS \"Prev Week ($)\", ROUND(SUM(CASE WHEN week_rank = 1 THEN cost ELSE 0 END), 2) AS \"Curr Week ($)\", ROUND((SUM(CASE WHEN week_rank = 1 THEN cost ELSE 0 END) - SUM(CASE WHEN week_rank = 2 THEN cost ELSE 0 END)) / NULLIF(SUM(CASE WHEN week_rank = 2 THEN cost ELSE 0 END), 0) * 100, 1) AS \"Change (%)\" FROM (SELECT line_item_product_code AS service, MAX(resource_tags_user_team) AS team, SUM(line_item_unblended_cost) AS cost, DENSE_RANK() OVER (ORDER BY DATE_TRUNC('week', from_iso8601_timestamp(line_item_usage_start_date)) DESC) AS week_rank FROM finops_pipeline_cur.cur_report WHERE line_item_line_item_type = 'Usage' GROUP BY 1, DATE_TRUNC('week', from_iso8601_timestamp(line_item_usage_start_date))) t GROUP BY 1, 2 ORDER BY \"Change (%)\" DESC",
+          "refId": "A",
+          "hide": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Prev Week ($)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Curr Week ($)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Change (%)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 15
+                    },
+                    {
+                      "color": "red",
+                      "value": 30
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Change (%)",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": false
+        }
+      }
+    }
+  ]
+}
